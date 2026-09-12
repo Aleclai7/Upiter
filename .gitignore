@@ -1,0 +1,27 @@
+# .NET
+backend/bin/
+backend/obj/
+*.user
+*.db
+*.db-shm
+*.db-wal
+
+# Node / React
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+frontend/.env
+frontend/.env.local
+npm-debug.log*
+
+# Secrets (Telegram bot token, connection strings, etc.)
+backend/appsettings.Local.json
+backend/appsettings.Secrets.json
+**/secrets.json
+
+# Editor
+.vscode/
+.idea/
+
+# OS
+.DS_Store
