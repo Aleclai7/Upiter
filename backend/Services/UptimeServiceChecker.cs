@@ -2,6 +2,8 @@ using Microsoft.EntityFrameworkCore;
 using Upiter.Api.Data;
 using Upiter.Api.Models;
 using Upiter.Api.Services;
+using Microsoft.AspNetCore.SignalR;
+using Upiter.Api.Hubs;
 
 namespace Upiter.Api.Services;
 
@@ -10,14 +12,17 @@ public class UptimeServiceChecker : BackgroundService
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly ILogger<UptimeServiceChecker> _logger;
+    private readonly IHubContext<StatusHub> _hubContext;
 
     public UptimeServiceChecker(
         IServiceScopeFactory scopeFactory,
         IHttpClientFactory httpClientFactory,
+        IHubContext<StatusHub> hubContext,
         ILogger<UptimeServiceChecker> logger)
     {
         _scopeFactory = scopeFactory;
         _httpClientFactory = httpClientFactory;
+        _hubContext = hubContext;
         _logger = logger;
     }
 

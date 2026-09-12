@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Upiter.Api.Data;
 using Upiter.Api.Models;
 using Upiter.Api.Services;
+using Upiter.Api.Hubs;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<UpiterDbContext>(options =>
@@ -9,7 +10,19 @@ builder.Services.AddDbContext<UpiterDbContext>(options =>
 
 builder.Services.AddHttpClient();
 builder.Services.AddHostedService<UptimeServiceChecker>();
+builder.Services.AddSignalR();
 builder.Services.AddOpenApi();
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend", policy =>
+    {
+        policy.WithOrigins("http://localhost:5173")
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials();
+    });
+});
 
 var app = builder.Build();
 
@@ -19,7 +32,11 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
+app.UseCors("AllowFrontend");
+
 app.UseHttpsRedirection();
+
+app.MapHub<StatusHub>("/hubs/status");
 
 app.MapGet("/targets", async (UpiterDbContext db) =>
 {
