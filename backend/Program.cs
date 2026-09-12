@@ -51,5 +51,35 @@ app.MapPost("/targets", async (Target target, UpiterDbContext db) =>
     return Results.Created($"/targets/{target.Id}", target);
 });
 
+app.MapGet("/targets/{id}", async (int id, UpiterDbContext db) =>
+{
+    var target = await db.Targets.FindAsync(id);
+    return target is not null ? Results.Ok(target) : Results.NotFound();
+});
+
+app.MapPatch("/targets/{id}", async (int id, Target updated, UpiterDbContext db) =>
+{
+    var target = await db.Targets.FindAsync(id);
+    if (target is null) return Results.NotFound();
+
+    target.Name = updated.Name;
+    target.Url = updated.Url;
+    target.IntervalSeconds = updated.IntervalSeconds;
+    target.IsActive = updated.IsActive;
+
+    await db.SaveChangesAsync();
+    return Results.Ok(target);
+});
+
+app.MapDelete("/targets/{id}", async (int id, UpiterDbContext db) =>
+{
+    var target = await db.Targets.FindAsync(id);
+    if (target is null) return Results.NotFound();
+
+    db.Targets.Remove(target);
+    await db.SaveChangesAsync();
+    return Results.NoContent();
+});
+
 app.Run();
 
