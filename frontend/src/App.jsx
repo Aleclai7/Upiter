@@ -1,122 +1,142 @@
-import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import './App.css'
+import { useState, useEffect } from "react";
+import * as signalR from "@microsoft/signalr";
+import "./App.css";
+
+const API_BASE = "http://localhost:5018";
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [ targets, setTargets ] = useState([]);
+  const [ loading, setLoading ] = useState(true);
+  const [ error, setError ] = useState(null);
+  
+  useEffect(() => {
+    fetch(`${API_BASE}/targets`)
+    .then((res) => {
+      if (!res.ok) {
+        throw new Error("Network response was not ok");
+      }
+      return res.json();
+    })
+    .then((data) => {
+      setTargets(data);
+      setLoading(false);
+    })
+    .catch((err) => {
+      setError(err.message);
+      setLoading(false);
+    });
+  }), [];
+
+  useEffect(() => {
+    const connection = new signalR.HubConnectionBuilder()
+      .withUrl(`${API_BASE}/hubs/status`)
+      .withAutomaticReconnect()
+      .build();
+
+    let isMounted = true;
+
+    connection.on('StatusChanged', (data) => {
+      console.log('StatusChanged received:', data);
+      setTargets((prev) =>
+        prev.map((t) =>
+          t.id === data.targetId
+            ? { ...t, lastKnownUp: data.isUp, lastCheckedAt: data.checkedAt }
+            : t
+        )
+      );
+    });
+
+    connection
+      .start()
+      .then(() => {
+        if (isMounted) console.log('Connected to StatusHub');
+      })
+      .catch((err) => {
+        if (isMounted) console.error('SignalR connection failed:', err);
+      });
+
+    return () => {
+      isMounted = false;
+      connection.stop();
+    };
+  }, []);
+
+    if (loading)
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-950 text-gray-300">
+        Loading targets...
+      </div>
+    );
+
+  if (error)
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-950 text-red-400">
+        Error: {error}
+      </div>
+    );
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+        <div className="min-h-screen bg-gray-950 text-gray-100 px-4 py-10">
+      <div className="max-w-3xl mx-auto">
+        <h1 className="text-3xl font-bold mb-1">Upiter</h1>
+        <p className="text-gray-400 mb-6">
+          Monitoring {targets.length} target(s)
+        </p>
 
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
+        <div className="overflow-hidden rounded-lg border border-gray-800">
+          <table className="w-full text-left">
+            <thead className="bg-gray-900 text-gray-400 text-sm uppercase">
+              <tr>
+                <th className="px-4 py-3">Name</th>
+                <th className="px-4 py-3">URL</th>
+                <th className="px-4 py-3">Status</th>
+                <th className="px-4 py-3">Last Checked</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-800">
+              {targets.map((t) => (
+                <tr key={t.id} className="hover:bg-gray-900/50">
+                  <td className="px-4 py-3 font-medium">{t.name}</td>
+                  <td className="px-4 py-3 text-gray-400">{t.url}</td>
+                  <td className="px-4 py-3">
+                    <span
+                      className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-semibold ${
+                        t.lastKnownUp
+                          ? 'bg-green-500/10 text-green-400'
+                          : t.lastKnownUp === false
+                          ? 'bg-red-500/10 text-red-400'
+                          : 'bg-gray-500/10 text-gray-400'
+                      }`}
+                    >
+                      <span
+                        className={`w-1.5 h-1.5 rounded-full ${
+                          t.lastKnownUp
+                            ? 'bg-green-400'
+                            : t.lastKnownUp === false
+                            ? 'bg-red-400'
+                            : 'bg-gray-400'
+                        }`}
+                      />
+                      {t.lastKnownUp === null
+                        ? 'Unknown'
+                        : t.lastKnownUp
+                        ? 'UP'
+                        : 'DOWN'}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-gray-400 text-sm">
+                    {t.lastCheckedAt
+                      ? new Date(t.lastCheckedAt).toLocaleTimeString()
+                      : 'Never'}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+      </div>
+    </div>
+  );
 }
 
-export default App
+export default App;
