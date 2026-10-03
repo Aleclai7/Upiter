@@ -12,17 +12,20 @@ public class UptimeServiceChecker : BackgroundService
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly ILogger<UptimeServiceChecker> _logger;
+    private readonly EmailAlertService _emailAlertService;
     private readonly IHubContext<StatusHub> _hubContext;
 
     public UptimeServiceChecker(
         IServiceScopeFactory scopeFactory,
         IHttpClientFactory httpClientFactory,
         IHubContext<StatusHub> hubContext,
+        EmailAlertService emailAlertService,
         ILogger<UptimeServiceChecker> logger)
     {
         _scopeFactory = scopeFactory;
         _httpClientFactory = httpClientFactory;
         _hubContext = hubContext;
+        _emailAlertService = emailAlertService;
         _logger = logger;
     }
 
@@ -96,7 +99,7 @@ public class UptimeServiceChecker : BackgroundService
         if (statusChanged)
         {
             _logger.LogWarning("STATUS CHANGED for {Name}: now {Status}", target.Name, result.IsUp ? "UP" : "DOWN");
-            // SignalR broadcast + Telegram alert will go here — next steps
+            await _emailAlertService.SendAlertAsync(target.Name, result.IsUp, result.CheckedAt);
         }
     }
 }

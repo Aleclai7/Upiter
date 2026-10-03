@@ -9,6 +9,7 @@ builder.Services.AddDbContext<UpiterDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 builder.Services.AddHttpClient();
+builder.Services.AddSingleton<EmailAlertService>();
 builder.Services.AddHostedService<UptimeServiceChecker>();
 builder.Services.AddSignalR();
 builder.Services.AddOpenApi();

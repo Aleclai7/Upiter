@@ -17,12 +17,15 @@ public class EmailAlertService
 
     public async Task SendAlertAsync(string targetName, bool isUp, DateTime checkedAt)
     {
-        var fromAddress = _config["Email:FromAddress"]
-            ?? throw new InvalidOperationException("Email:FromAddress is not configured.");
-        var appPassword = _config["Email:AppPassword"]
-            ?? throw new InvalidOperationException("Email:AppPassword is not configured.");
-        var toAddress = _config["Email:ToAddress"]
-            ?? throw new InvalidOperationException("Email:ToAddress is not configured.");
+        var fromAddress = _config["Email:FromAddress"];
+        var appPassword = _config["Email:AppPassword"];
+        var toAddress = _config["Email:ToAddress"];
+
+        if (fromAddress is null || appPassword is null || toAddress is null)
+        {
+            _logger.LogError("Email configuration is missing. Please check your appsettings.json or environment variables.");
+            return;
+        }
 
         var message = new MimeMessage();
         message.From.Add(MailboxAddress.Parse(fromAddress));
