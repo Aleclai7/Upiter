@@ -10,7 +10,7 @@ function App() {
   const [ error, setError ] = useState(null);
   
   useEffect(() => {
-    fetch(`${API_BASE}/targets`)
+    fetch(`${API_BASE}/status`)
     .then((res) => {
       if (!res.ok) {
         throw new Error("Network response was not ok");

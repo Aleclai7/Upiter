@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Upiter.Api.Models;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace Upiter.Api.Data;
 
@@ -11,6 +12,10 @@ public class UpiterDbContext : DbContext
     public DbSet<Target> Targets => Set<Target>();
     public DbSet<CheckResult> CheckResults => Set<CheckResult>();
 
+    protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
+    {
+      configurationBuilder.Properties<DateTime>().HaveConversion<UtcDateTimeConverter>();
+    }
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Target>()
@@ -21,4 +26,10 @@ public class UpiterDbContext : DbContext
     }
 }
 
-
+public class UtcDateTimeConverter : ValueConverter<DateTime, DateTime>
+{
+    public UtcDateTimeConverter()
+        : base(v => v, v => DateTime.SpecifyKind(v, DateTimeKind.Utc))
+    {
+    }
+}
