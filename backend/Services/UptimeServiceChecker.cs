@@ -99,6 +99,14 @@ public class UptimeServiceChecker : BackgroundService
         if (statusChanged)
         {
             _logger.LogWarning("STATUS CHANGED for {Name}: now {Status}", target.Name, result.IsUp ? "UP" : "DOWN");
+            
+            await _hubContext.Clients.All.SendAsync("StatusChanged", new
+            {
+                TargetId = target.Id,
+                isUp = result.IsUp,
+                checkedAt = result.CheckedAt
+            }, stoppingToken);
+
             await _emailAlertService.SendAlertAsync(target.Name, result.IsUp, result.CheckedAt);
         }
     }

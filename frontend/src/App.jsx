@@ -25,7 +25,7 @@ function App() {
       setError(err.message);
       setLoading(false);
     });
-  }), [];
+  }, []);
 
   useEffect(() => {
     const connection = new signalR.HubConnectionBuilder()
